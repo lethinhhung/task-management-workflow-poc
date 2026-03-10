@@ -24,18 +24,18 @@ A spec-driven development CLI tool that transforms a project's core specificatio
 The workflow tool follows a layered transformation model:
 
 ```
-specs/core-spec.md
+specs/core-spec/*.md
        ↓ init
-derived-spec/ (architecture, implementation, tests)
+specs/derived-spec/ (architecture, implementation, tests)
        ↓ code
 src/ + tests/ + package.json
        ↓ feature (iterative)
-specs/new-features/*.md → specs/features/*.md → derived-spec/ → src/ + tests/
+specs/new-features/*.md → specs/features/*.md → specs/derived-spec/ → src/ + tests/
        ↓ debug (iterative)
 error analysis → src/ fix → tests pass
 ```
 
-Each layer builds on the previous one. The core spec is the single source of truth; derived specs are regenerated from it (plus any feature specs) whenever the pipeline runs.
+Each layer builds on the previous one. The core spec directory is the single source of truth; derived specs are regenerated from it (plus any feature specs) whenever the pipeline runs.
 
 ## Commands
 
@@ -55,11 +55,18 @@ The workflow tool expects and produces the following structure in the target pro
 ```
 project/
 ├── specs/
-│   ├── core-spec.md                 # Source of truth (user-authored)
+│   ├── core-spec/                   # Source of truth (user-authored)
+│   │   ├── overview.md              # Project name, goal, tech stack
+│   │   ├── data-model.md            # Entities, fields, relationships
+│   │   ├── api.md                   # Endpoint definitions and behavior
+│   │   ├── auth.md                  # JWT strategy, password security, guards
+│   │   ├── frontend.md              # Pages, UI components, architecture
+│   │   ├── testing.md               # Backend and frontend E2E test cases
+│   │   └── infrastructure.md        # Env vars, project structure, non-functional reqs
 │   ├── new-features/*.md            # Pending feature requests (user-authored)
 │   ├── features/*.md                # Generated feature specs
 │   └── generated-new-features/*.md  # Processed feature requests (archived)
-├── derived-spec/
+├── specs/derived-spec/
 │   ├── architecture.md              # Generated from core + feature specs
 │   ├── implementation.md            # Generated from core + feature specs
 │   └── tests.md                     # Generated from core + feature specs
@@ -77,4 +84,4 @@ project/
 
 ## Target
 
-This workflow tool is a general-purpose spec-driven development pipeline. It operates on a project's `specs/core-spec.md` to produce derived specifications, source code, and tests. The target project is defined by whatever core spec is provided.
+This workflow tool is a general-purpose spec-driven development pipeline. It operates on a project's `specs/core-spec/` directory (reading all `*.md` files within it) to produce derived specifications, source code, and tests. The target project is defined by whatever core spec files are provided.

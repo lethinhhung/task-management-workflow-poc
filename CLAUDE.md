@@ -35,7 +35,7 @@ This repository is an experiment in AI-assisted software development. It contain
 ## Development Loop
 
 ```
-specs/core-spec.md → workflow init → derived-spec/ → workflow code → src/ + tests/
-                                                     workflow feature → iterative additions
-                                                     workflow debug   → fix and verify
+specs/core-spec/*.md → workflow init → specs/derived-spec/ → workflow code → src/ + tests/
+                                                       workflow feature → iterative additions
+                                                       workflow debug   → fix and verify
 ```
