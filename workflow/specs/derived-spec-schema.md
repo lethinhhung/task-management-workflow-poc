@@ -4,6 +4,8 @@
 
 Defines the required structure and content for each file generated in `specs/derived-spec/`. These files are produced by `workflow init` (from core specs) and updated by `workflow feature` (merging core + feature specs). They serve as the input for `workflow code`.
 
+All derived spec generation is performed by **Claude Code**. Claude reads the core and feature specs, synthesizes the information, and writes the derived spec files following the schema below. The schema ensures Claude produces consistent, structured output that downstream commands can rely on.
+
 ## Files
 
 ### `architecture.md`

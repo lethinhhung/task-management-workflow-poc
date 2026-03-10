@@ -4,6 +4,10 @@
 
 Add a new feature to the project. Reads new feature requests, generates feature specs, regenerates derived specs, regenerates code, and runs tests.
 
+## Execution
+
+This command invokes **Claude Code** at multiple stages: (1) to transform feature requests into structured feature specs, (2) to regenerate derived specs by synthesizing core specs + feature specs, and (3) via `workflow code --force` to regenerate all source code. The workflow CLI orchestrates the pipeline, runs tests via shell commands, and manages file moves.
+
 ## Input
 
 - Feature request markdown files located in `specs/new-features/*.md`.

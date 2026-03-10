@@ -4,6 +4,10 @@
 
 Debug failing code or tests. Analyzes the provided error, proposes a fix, updates source code, and re-runs tests.
 
+## Execution
+
+This command invokes **Claude Code** to perform error analysis and code fixes. Claude Code reads the error description, searches the codebase to identify the root cause, applies targeted fixes to the source files, and the workflow CLI re-runs tests to verify. The analyze → fix → verify loop repeats up to 3 times.
+
 ## Input
 
 - An error description or failing test name passed as a CLI argument.

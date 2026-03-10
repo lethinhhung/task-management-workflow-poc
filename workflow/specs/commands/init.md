@@ -4,6 +4,10 @@
 
 Generate derived specs from the core spec. This bootstraps the project by producing structured specification files that downstream commands (`code`, `feature`, `debug`) consume.
 
+## Execution
+
+This command invokes **Claude Code** to perform spec analysis and derived spec generation. Claude Code reads all core spec files, synthesizes the information, and writes the derived spec files following the schema. The workflow CLI orchestrates the invocation and validates the output.
+
 ## Input
 
 - `specs/core-spec/` — the source of truth directory containing project requirement files (`*.md`).

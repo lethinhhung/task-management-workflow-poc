@@ -9,6 +9,10 @@ This repository is an experiment in AI-assisted software development. It contain
 1. **`workflow/`** — Specifications for the development workflow CLI and its commands.
 2. **Generated project** — A full-stack Task Management app produced by the workflow.
 
+## Execution Engine
+
+All workflow commands use **Claude Code** as the agentic execution engine. The workflow CLI orchestrates the pipeline — reading specs, invoking Claude Code for generation and analysis, running tests via shell, and managing file operations. No manual code editing occurs; all code originates from Claude Code interpreting specs.
+
 ## Target Project Tech Stack
 
 - **Frontend**: React

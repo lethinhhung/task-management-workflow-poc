@@ -4,12 +4,38 @@
 
 A spec-driven development CLI tool that transforms a project's core specification into working code through a structured pipeline. The workflow tool reads specs, generates derived specs, produces source code and tests, and supports iterative feature addition and debugging.
 
+## Execution Engine
+
+The workflow CLI is an **agentic orchestration layer** powered by **Claude Code** (Anthropic's CLI for Claude). Every workflow command delegates its core work — spec analysis, code generation, test writing, and debugging — to Claude Code.
+
+### How It Works
+
+1. **The user runs a workflow command** (e.g., `workflow init`).
+2. **The workflow CLI reads the relevant specs** and constructs a prompt with the spec content and the command's instructions.
+3. **Claude Code executes the task** — reading files, generating code, writing files, and running shell commands as needed.
+4. **The workflow CLI validates the output** — checks that expected files were created and tests pass.
+
+### Why Claude Code
+
+- **Spec interpretation**: Claude reads markdown specs and understands requirements, data models, API contracts, and test cases without needing a rigid parser.
+- **Code generation**: Claude produces idiomatic TypeScript, NestJS modules, React components, and test files directly from spec descriptions.
+- **Debugging**: Claude analyzes error messages, traces them to source code, and applies targeted fixes.
+- **Consistency**: By always reading the full spec set before generating, Claude ensures cross-module consistency (e.g., DTOs match entities match API contracts match tests).
+
+### Constraints
+
+- Claude Code must always read the relevant specs before generating or modifying any files.
+- Claude Code must not invent requirements — all generated code must trace back to a spec.
+- Claude Code must follow the project structure defined in `specs/derived-spec/architecture.md`.
+- Human developers do not manually edit generated code. All changes flow through specs → workflow commands → Claude Code.
+
 ## Tech Stack (Workflow CLI)
 
 - TypeScript
 - Node.js
 - Jest (testing)
 - npm (package manager)
+- **Claude Code** (execution engine)
 
 ## Tech Stack (Target Project)
 

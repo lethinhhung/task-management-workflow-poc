@@ -4,6 +4,10 @@
 
 Generate project source code, tests, and configuration from the derived specs. Translates specifications into a runnable project scaffold with separate backend and frontend sub-projects.
 
+## Execution
+
+This command invokes **Claude Code** to perform code generation. Claude Code reads the derived spec files, interprets the architecture, implementation plan, and test specification, then writes all source code, test files, and configuration files. The workflow CLI orchestrates the invocation, validates that expected files were created, and runs dependency installation.
+
 ## Input
 
 - `specs/derived-spec/*` — the derived specification files produced by `workflow init`.
