@@ -1,5 +1,6 @@
 import { execFileSync } from "child_process";
 import * as logger from "../utils/logger";
+import { projectRoot } from "../utils/files";
 
 export interface ClaudeResult {
   stdout: string;
@@ -10,7 +11,7 @@ export function invoke(prompt: string): ClaudeResult {
   logger.info("Invoking Claude Code...");
   try {
     const stdout = execFileSync("claude", ["-p", prompt], {
-      cwd: process.cwd(),
+      cwd: projectRoot(),
       encoding: "utf-8",
       maxBuffer: 50 * 1024 * 1024, // 50MB
       timeout: 600_000, // 10 minutes
