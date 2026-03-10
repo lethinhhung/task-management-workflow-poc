@@ -8,25 +8,50 @@ Generate derived specs from the core spec. This bootstraps the project by produc
 
 - `specs/core-spec/` — the source of truth directory containing project requirement files (`*.md`).
 
+## Output
+
+- `specs/derived-spec/architecture.md`
+- `specs/derived-spec/implementation.md`
+- `specs/derived-spec/tests.md`
+
+See `workflow/specs/derived-spec-schema.md` for the required format and content of each output file.
+
 ## Flow
 
 1. Read all `*.md` files from `specs/core-spec/`.
-2. Parse project name, goal, requirements, and testing sections.
+2. Synthesize project architecture, implementation plan, and test specification.
 3. Generate derived spec files at `specs/derived-spec/`.
 4. Done.
 
 ## Behavior
 
 1. Read all `*.md` files from `specs/core-spec/`.
-2. Parse project name, goal, requirements, and testing sections.
-3. Generate `specs/derived-spec/architecture.md` — high-level architecture and module breakdown.
-4. Generate `specs/derived-spec/implementation.md` — implementation plan with steps and dependencies.
-5. Generate `specs/derived-spec/tests.md` — test cases derived from the requirements.
+2. Analyze the core specs to understand:
+   - Project structure (from `overview.md` and `infrastructure.md`).
+   - Data model and relationships (from `data-model.md`).
+   - API endpoints and behavior (from `api.md`).
+   - Authentication strategy (from `auth.md`).
+   - Frontend pages and components (from `frontend.md`).
+   - Test cases and strategy (from `testing.md`).
+3. Generate `specs/derived-spec/architecture.md`:
+   - System overview (monorepo with backend + frontend).
+   - Complete project directory tree with every file.
+   - Module breakdown (responsibilities, locations, dependencies, exports).
+   - Data flow diagrams for key operations.
+   - External dependency list by sub-project.
+4. Generate `specs/derived-spec/implementation.md`:
+   - Setup steps (package.json, tsconfig, env, docker-compose).
+   - Ordered implementation steps with file lists and dependencies.
+   - Configuration file contents.
+   - Environment variable reference.
+5. Generate `specs/derived-spec/tests.md`:
+   - Test strategy overview.
+   - Backend test setup (test database, app bootstrap, helpers).
+   - Backend test suites with individual test cases (setup, action, assertion).
+   - Frontend test setup (Playwright config, base URL, helpers).
+   - Frontend test suites with individual test cases (steps, assertions).
+   - Test commands for each suite.
 6. Print a summary of generated files to stdout.
-
-## Proposed Solutions
-
-Propose 3 solutions for implementing this command. For each solution, provide a brief description, pros, and cons. Create a separate workspace to run it separately with naming: `workspace/{index}-{command}-{short-description}-{timestamp}`.
 
 ## Error Handling
 
@@ -37,9 +62,17 @@ Propose 3 solutions for implementing this command. For each solution, provide a 
 
 ```
 $ workflow init
-✓ Read specs/core-spec/
+→ Reading core specs...
+✓ Read specs/core-spec/overview.md
+✓ Read specs/core-spec/data-model.md
+✓ Read specs/core-spec/api.md
+✓ Read specs/core-spec/auth.md
+✓ Read specs/core-spec/frontend.md
+✓ Read specs/core-spec/testing.md
+✓ Read specs/core-spec/infrastructure.md
+→ Generating derived specs...
 ✓ Generated specs/derived-spec/architecture.md
 ✓ Generated specs/derived-spec/implementation.md
 ✓ Generated specs/derived-spec/tests.md
-Init complete — 3 files generated.
+Init complete — 3 derived spec files generated from 7 core spec files.
 ```

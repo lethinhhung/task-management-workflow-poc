@@ -12,6 +12,7 @@
 | DB_NAME_TEST  | Test database name       | taskmanager_test       |
 | JWT_SECRET    | Secret for signing JWTs  | a-strong-secret-key    |
 | PORT          | Backend server port      | 3000                   |
+| VITE_API_URL  | Backend API URL (frontend) | http://localhost:3000/api |
 
 ## Project Structure
 

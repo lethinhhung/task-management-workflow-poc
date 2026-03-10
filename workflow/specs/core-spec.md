@@ -28,11 +28,11 @@ specs/core-spec/*.md
        ↓ init
 specs/derived-spec/ (architecture, implementation, tests)
        ↓ code
-src/ + tests/ + package.json
+backend/ + frontend/ + docker-compose.yml
        ↓ feature (iterative)
-specs/new-features/*.md → specs/features/*.md → specs/derived-spec/ → src/ + tests/
+specs/new-features/*.md → specs/features/*.md → specs/derived-spec/ → backend/ + frontend/
        ↓ debug (iterative)
-error analysis → src/ fix → tests pass
+error analysis → code fix → tests pass
 ```
 
 Each layer builds on the previous one. The core spec directory is the single source of truth; derived specs are regenerated from it (plus any feature specs) whenever the pipeline runs.
@@ -70,9 +70,15 @@ project/
 │   ├── architecture.md              # Generated from core + feature specs
 │   ├── implementation.md            # Generated from core + feature specs
 │   └── tests.md                     # Generated from core + feature specs
-├── src/                             # Generated source code
-├── tests/                           # Generated test files
-└── package.json                     # Generated project config
+├── backend/                         # Generated NestJS backend
+│   ├── src/                         # Backend source code
+│   ├── test/                        # Backend E2E tests (Jest + Supertest)
+│   └── package.json                 # Backend dependencies
+├── frontend/                        # Generated React frontend
+│   ├── src/                         # Frontend source code
+│   ├── e2e/                         # Frontend E2E tests (Playwright)
+│   └── package.json                 # Frontend dependencies
+└── docker-compose.yml               # PostgreSQL and service orchestration
 ```
 
 ## Principles
@@ -84,4 +90,4 @@ project/
 
 ## Target
 
-This workflow tool is a general-purpose spec-driven development pipeline. It operates on a project's `specs/core-spec/` directory (reading all `*.md` files within it) to produce derived specifications, source code, and tests. The target project is defined by whatever core spec files are provided.
+This workflow tool is a spec-driven development pipeline. It operates on a project's `specs/core-spec/` directory (reading all `*.md` files within it) to produce derived specifications, source code, and tests. The target project structure (e.g., `backend/`, `frontend/`, monorepo layout) is determined by the derived specs generated from the core spec files. See `workflow/specs/derived-spec-schema.md` for the derived spec format.
