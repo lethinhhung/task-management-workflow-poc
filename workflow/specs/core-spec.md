@@ -69,7 +69,7 @@ Each layer builds on the previous one. The core spec directory is the single sou
 | --------- | ---------------------------------------------------- |
 | `init`    | Bootstrap derived specs from the core spec           |
 | `code`    | Generate source code, tests, and config from derived specs |
-| `feature` | Add features via a pipeline: new-feature → core spec → derived spec → code → test |
+| `feature` | Add features via a pipeline: new-feature → feature spec → derived spec → code → test |
 | `debug`   | Analyze errors, apply fixes, and re-run tests        |
 
 See `workflow/specs/commands/*.md` for detailed command specifications.
