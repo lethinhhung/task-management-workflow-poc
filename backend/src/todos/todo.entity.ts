@@ -22,6 +22,9 @@ export class Todo {
   @Column({ default: false })
   completed: boolean;
 
+  @Column({ type: 'timestamp', nullable: true, default: null })
+  dueDate: Date | null;
+
   @Column()
   userId: string;
 

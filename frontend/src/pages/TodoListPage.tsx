@@ -9,6 +9,7 @@ interface Todo {
   title: string;
   description: string | null;
   completed: boolean;
+  dueDate: string | null;
   createdAt: string;
 }
 
@@ -16,6 +17,7 @@ export function TodoListPage() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
+  const [newDueDate, setNewDueDate] = useState('');
   const [error, setError] = useState('');
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -40,10 +42,12 @@ export function TodoListPage() {
       const response = await apiClient.post('/todos', {
         title: newTitle,
         description: newDescription || undefined,
+        dueDate: newDueDate ? new Date(newDueDate).toISOString() : null,
       });
       setTodos((prev) => [...prev, response.data]);
       setNewTitle('');
       setNewDescription('');
+      setNewDueDate('');
     } catch {
       setError('Failed to create todo');
     }
@@ -67,9 +71,9 @@ export function TodoListPage() {
     }
   };
 
-  const handleEdit = async (id: string, title: string, description: string) => {
+  const handleEdit = async (id: string, title: string, description: string, dueDate: string | null) => {
     try {
-      const response = await apiClient.patch(`/todos/${id}`, { title, description });
+      const response = await apiClient.patch(`/todos/${id}`, { title, description, dueDate });
       setTodos((prev) => prev.map((t) => (t.id === id ? response.data : t)));
     } catch {
       setError('Failed to update todo');
@@ -103,6 +107,13 @@ export function TodoListPage() {
           onChange={(e) => setNewDescription(e.target.value)}
           placeholder="Description (optional)"
           data-testid="new-todo-description"
+          style={{ padding: '8px', marginRight: '8px' }}
+        />
+        <input
+          type="date"
+          value={newDueDate}
+          onChange={(e) => setNewDueDate(e.target.value)}
+          data-testid="new-todo-due-date"
           style={{ padding: '8px', marginRight: '8px' }}
         />
         <button onClick={handleAddTodo} data-testid="add-todo">Add</button>

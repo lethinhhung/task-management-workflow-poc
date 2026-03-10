@@ -56,11 +56,11 @@ describe('App E2E', () => {
     return res.body.accessToken;
   };
 
-  const createTodo = (token: string, title: string, description?: string) =>
+  const createTodo = (token: string, title: string, description?: string, dueDate?: string) =>
     request(app.getHttpServer())
       .post('/api/todos')
       .set('Authorization', `Bearer ${token}`)
-      .send({ title, description });
+      .send({ title, description, dueDate });
 
   // Auth Tests
   describe('Auth', () => {
@@ -220,6 +220,105 @@ describe('App E2E', () => {
         .delete(`/api/todos/${createRes.body.id}`)
         .set('Authorization', `Bearer ${tokenB}`);
       expect(res.status).toBe(404);
+    });
+
+    it('Create todo with due date', async () => {
+      await signupUser('duedate-create@example.com', 'password123');
+      const token = await loginUser('duedate-create@example.com', 'password123');
+
+      const res = await createTodo(token, 'Deadline task', undefined, '2026-04-01T00:00:00.000Z');
+      expect(res.status).toBe(201);
+      expect(res.body.dueDate).toBe('2026-04-01T00:00:00.000Z');
+      expect(res.body.title).toBe('Deadline task');
+    });
+
+    it('Create todo without due date — dueDate is null', async () => {
+      await signupUser('duedate-null@example.com', 'password123');
+      const token = await loginUser('duedate-null@example.com', 'password123');
+
+      const res = await createTodo(token, 'No deadline');
+      expect(res.status).toBe(201);
+      expect(res.body.dueDate).toBeNull();
+    });
+
+    it('Update todo — set due date', async () => {
+      await signupUser('duedate-set@example.com', 'password123');
+      const token = await loginUser('duedate-set@example.com', 'password123');
+      const createRes = await createTodo(token, 'Set due date later');
+
+      const res = await request(app.getHttpServer())
+        .patch(`/api/todos/${createRes.body.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ dueDate: '2026-05-01T00:00:00.000Z' });
+      expect(res.status).toBe(200);
+      expect(res.body.dueDate).toBe('2026-05-01T00:00:00.000Z');
+    });
+
+    it('Update todo — clear due date', async () => {
+      await signupUser('duedate-clear@example.com', 'password123');
+      const token = await loginUser('duedate-clear@example.com', 'password123');
+      const createRes = await createTodo(token, 'Clear due date', undefined, '2026-05-01T00:00:00.000Z');
+
+      const res = await request(app.getHttpServer())
+        .patch(`/api/todos/${createRes.body.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ dueDate: null });
+      expect(res.status).toBe(200);
+      expect(res.body.dueDate).toBeNull();
+    });
+
+    it('Create todo — invalid dueDate format rejected', async () => {
+      await signupUser('duedate-invalid@example.com', 'password123');
+      const token = await loginUser('duedate-invalid@example.com', 'password123');
+
+      const res = await request(app.getHttpServer())
+        .post('/api/todos')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ title: 'Bad date', dueDate: 'not-a-date' });
+      expect(res.status).toBe(400);
+      expect(JSON.stringify(res.body.message)).toContain('dueDate');
+    });
+
+    it('Create todo — invalid dueDate format (partial date) rejected', async () => {
+      await signupUser('duedate-partial@example.com', 'password123');
+      const token = await loginUser('duedate-partial@example.com', 'password123');
+
+      const res = await request(app.getHttpServer())
+        .post('/api/todos')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ title: 'Bad date 2', dueDate: '2026-13-01' });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBeDefined();
+    });
+
+    it('Update todo — invalid dueDate format rejected', async () => {
+      await signupUser('duedate-updinvalid@example.com', 'password123');
+      const token = await loginUser('duedate-updinvalid@example.com', 'password123');
+      const createRes = await createTodo(token, 'Update invalid date');
+
+      const res = await request(app.getHttpServer())
+        .patch(`/api/todos/${createRes.body.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ dueDate: 'yesterday' });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBeDefined();
+    });
+
+    it('List todos returns dueDate field', async () => {
+      await signupUser('duedate-list@example.com', 'password123');
+      const token = await loginUser('duedate-list@example.com', 'password123');
+      await createTodo(token, 'With date', undefined, '2026-06-01T00:00:00.000Z');
+      await createTodo(token, 'Without date');
+
+      const res = await request(app.getHttpServer())
+        .get('/api/todos')
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(2);
+      const withDate = res.body.find((t: any) => t.title === 'With date');
+      const withoutDate = res.body.find((t: any) => t.title === 'Without date');
+      expect(withDate.dueDate).toBe('2026-06-01T00:00:00.000Z');
+      expect(withoutDate.dueDate).toBeNull();
     });
   });
 
