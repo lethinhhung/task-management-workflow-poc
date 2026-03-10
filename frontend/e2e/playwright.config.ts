@@ -9,12 +9,14 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: 'cd ../backend && npm run start:dev',
+      command: 'npm run start:dev',
+      cwd: '../../backend',
       port: 3000,
       reuseExistingServer: true,
     },
     {
       command: 'npm run dev',
+      cwd: '..',
       port: 5173,
       reuseExistingServer: true,
     },
