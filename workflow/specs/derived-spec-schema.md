@@ -136,12 +136,6 @@ Exact commands to run each test suite:
 - Frontend: `cd frontend && npx playwright test`
 ```
 
-## Merge Strategy (for `workflow feature`)
+## Feature Specs
 
-When `workflow feature` regenerates derived specs after adding a new feature:
-
-1. **Read all inputs**: All files from `specs/core-spec/*.md` and `specs/features/*.md`.
-2. **Regenerate from scratch**: Derived specs are fully regenerated each time — not patched. This ensures consistency.
-3. **Preserve structure**: Output must follow the section structure defined above.
-4. **Additive content**: New features add modules, endpoints, pages, and test cases to the existing architecture. They do not remove or replace existing functionality unless the feature spec explicitly says so.
-5. **Conflict resolution**: If a feature spec contradicts a core spec (e.g., redefines an endpoint), the feature spec takes precedence and a warning comment is added to the derived spec.
+When `workflow feature` adds a new feature, it generates a self-contained feature spec at `specs/features-spec/{index}-{name}-{timestamp}.md`. This feature spec serves as the implementation guide for patching existing code — derived specs are NOT regenerated. Derived specs remain the baseline from `workflow init`, and feature specs layer incremental changes on top.

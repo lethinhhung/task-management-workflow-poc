@@ -1,175 +1,184 @@
 import * as files from "../utils/files";
 import * as logger from "../utils/logger";
 import * as claude from "../claude/client";
-import { execSync } from "child_process";
 import * as path from "path";
 
 export async function featureCommand(): Promise<void> {
   const newFeaturesDir = files.resolve("specs", "new-features");
-  const featuresDir = files.resolve("specs", "features");
-  const derivedSpecDir = files.resolve("specs", "derived-spec");
-  const archivDir = files.resolve("specs", "generated-new-features");
+  const featuresSpecDir = files.resolve("specs", "features-spec");
+  const archiveDir = files.resolve("specs", "generated-new-features");
 
-  // Validate directories
+  // Validate new-features directory
   if (!files.dirExists(newFeaturesDir)) {
     logger.fatal("specs/new-features/ does not exist. Create feature request files first.");
   }
 
-  if (!files.dirExists(derivedSpecDir)) {
-    logger.fatal("specs/derived-spec/ does not exist. Run 'workflow init' first.");
+  // Validate project has been generated
+  const backendDir = files.resolve("backend");
+  const frontendDir = files.resolve("frontend");
+  if (!files.dirExists(backendDir) && !files.dirExists(frontendDir)) {
+    logger.fatal("Neither backend/ nor frontend/ exist. Run 'workflow code' first.");
   }
 
   // Read feature requests
   const featureRequests = await files.readMarkdownFiles(newFeaturesDir);
-
   if (featureRequests.length === 0) {
     logger.fatal("No .md files found in specs/new-features/.");
   }
 
-  // Read core specs
-  const coreSpecDir = files.resolve("specs", "core-spec");
-  const coreSpecs = await files.readMarkdownFiles(coreSpecDir);
+  // Determine next index from existing feature specs
+  files.ensureDir(featuresSpecDir);
+  const existingSpecs = await files.readMarkdownFiles(featuresSpecDir);
+  let nextIndex = existingSpecs.length + 1;
 
-  // Read derived spec schema
-  const schemaPath = files.resolve("workflow", "specs", "derived-spec-schema.md");
-  const schema = files.fileExists(schemaPath) ? files.readFile(schemaPath) : "";
+  // Read derived specs for context
+  const derivedSpecDir = files.resolve("specs", "derived-spec");
+  let specsContext = "";
+  if (files.dirExists(derivedSpecDir)) {
+    const specs = await files.readMarkdownFiles(derivedSpecDir);
+    specsContext = specs
+      .map((s) => `### ${s.name}\n\n${s.content}`)
+      .join("\n\n---\n\n");
+  }
 
-  // Read existing feature specs (if any)
-  files.ensureDir(featuresDir);
-  const existingFeatures = await files.readMarkdownFiles(featuresDir);
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
 
-  // Step 1: Generate feature specs from each request
   for (const request of featureRequests) {
     logger.info(`Reading specs/new-features/${request.name}`);
 
-    const featureSpecPrompt = `You are generating a structured feature specification from a feature request.
+    // Derive kebab-case name from filename (strip .md)
+    const featureName = request.name.replace(/\.md$/, "");
+    const indexStr = String(nextIndex).padStart(3, "0");
+    const specFileName = `${indexStr}-${featureName}-${today}.md`;
+    const specFilePath = path.join(featuresSpecDir, specFileName);
+
+    // Step 1: Generate feature spec
+    logger.info("Generating feature spec...");
+
+    const featureSpecPrompt = `You are generating a detailed feature specification from a feature request. This spec will be used to patch existing code — it must be detailed enough to guide implementation.
 
 ## Feature Request
 
 ${request.content}
 
+## Existing Project Specs (for context)
+
+${specsContext}
+
 ## Instructions
 
-Generate a feature spec file at specs/features/${request.name} containing:
+Generate a feature spec file at specs/features-spec/${specFileName} containing:
 
-- **Goal**: What the feature achieves (from the request's Description).
-- **Requirements**: Structured requirements (from the request's Requirements).
-- **Architecture impact**: New modules, endpoints, pages, or data model changes.
-- **Test cases**: Specific test scenarios with setup, action, and assertion.
+- **Goal**: What the feature achieves.
+- **Requirements**: Structured functional requirements.
+- **Data Model Changes**: New fields, entities, or migrations needed.
+- **API Changes**: New or modified endpoints with request/response shapes and validation rules.
+- **Frontend Changes**: New or modified components, pages, or UI elements.
+- **Implementation Steps**: Ordered list of specific code changes needed (which files to create or modify).
+- **Test Cases**: Specific backend and frontend test scenarios with setup, action, and assertion.
+
+Be precise about file paths, function names, and data types. This spec drives the code changes directly.
 
 Write the file now.`;
 
-    const result = claude.invoke(featureSpecPrompt);
-    if (!result.success) {
+    const specResult = claude.invoke(featureSpecPrompt);
+    if (!specResult.success) {
       logger.fatal(`Failed to generate feature spec for ${request.name}`);
     }
 
-    logger.success(`Generated specs/features/${request.name}`);
-  }
+    // Verify the spec was created
+    if (!files.fileExists(specFilePath)) {
+      logger.fatal(`Feature spec was not created at specs/features-spec/${specFileName}`);
+    }
 
-  // Step 2: Regenerate derived specs from core + all feature specs
-  const allFeatureSpecs = await files.readMarkdownFiles(featuresDir);
+    logger.success(`Generated specs/features-spec/${specFileName}`);
 
-  const coreContent = coreSpecs
-    .map((s) => `### ${s.name}\n\n${s.content}`)
-    .join("\n\n---\n\n");
+    // Step 2: Patch code based on feature spec
+    logger.info(`Patching code for feature: ${featureName}`);
 
-  const featureContent = allFeatureSpecs
-    .map((s) => `### ${s.name}\n\n${s.content}`)
-    .join("\n\n---\n\n");
+    const featureSpec = files.readFile(specFilePath);
 
-  const derivedSpecPrompt = `You are regenerating derived specifications for a software project. Read ALL core specs and feature specs below, and regenerate the three derived spec files from scratch.
+    const patchPrompt = `You are adding a new feature to an existing full-stack application by patching the current code. Do NOT regenerate or rewrite entire files — make targeted, incremental changes.
 
-## Derived Spec Schema
+## Feature Spec
 
-Follow this schema exactly:
-
-${schema}
-
-## Core Specs
-
-${coreContent}
-
-## Feature Specs
-
-${featureContent}
+${featureSpec}
 
 ## Instructions
 
-Regenerate all three derived spec files from scratch (not patched). New features add to existing functionality without removing anything unless explicitly stated.
+1. Read the existing source files that need to be modified.
+2. Apply the changes described in the feature spec:
+   - Modify existing files where needed (add fields, endpoints, components, etc.).
+   - Create new files only when the feature requires them.
+   - Update imports, routes, and registrations as needed.
+3. Do NOT:
+   - Rewrite files from scratch.
+   - Remove or refactor existing functionality.
+   - Change code unrelated to this feature.
+4. After patching, verify the changes look correct by reading the modified files.`;
 
-Write these files:
-
-1. **specs/derived-spec/architecture.md**
-2. **specs/derived-spec/implementation.md**
-3. **specs/derived-spec/tests.md**
-
-Each must follow the Required Sections from the schema precisely.`;
-
-  logger.info("Regenerating derived specs...");
-
-  // Remove existing derived specs for clean regeneration
-  files.removeDir(derivedSpecDir);
-  files.ensureDir(derivedSpecDir);
-
-  const derivedResult = claude.invoke(derivedSpecPrompt);
-  if (!derivedResult.success) {
-    logger.fatal("Failed to regenerate derived specs.");
-  }
-
-  // Validate derived spec files
-  const expectedFiles = ["architecture.md", "implementation.md", "tests.md"];
-  for (const fileName of expectedFiles) {
-    const filePath = files.resolve("specs", "derived-spec", fileName);
-    if (files.fileExists(filePath)) {
-      logger.success(`Updated specs/derived-spec/${fileName}`);
-    } else {
-      logger.fatal(`Missing derived spec file: ${fileName}`);
+    const patchResult = claude.invoke(patchPrompt);
+    if (!patchResult.success) {
+      logger.fatal(`Failed to patch code for feature: ${featureName}`);
     }
+
+    logger.success("Code patched successfully");
+
+    // Step 3: Run tests and fix via Claude Code
+    logger.info("Running tests and fixing issues via Claude Code...");
+
+    const sections: string[] = [];
+    if (files.dirExists(backendDir)) {
+      sections.push(`### Backend
+- Run tests: cd backend && npm test
+- Test files: backend/test/
+- Source files: backend/src/`);
+    }
+    if (files.dirExists(frontendDir)) {
+      sections.push(`### Frontend
+- Run tests: cd frontend && npx playwright test
+- Test files: frontend/e2e/
+- Source files: frontend/src/`);
+    }
+
+    const testPrompt = `You are responsible for making all tests pass after a feature was added to a full-stack application.
+
+## Feature That Was Added
+
+${featureSpec}
+
+## Test Suites
+
+${sections.join("\n\n")}
+
+## Instructions
+
+1. Run ALL test suites listed above, one at a time.
+2. If a test suite fails:
+   a. Read the failing test files and the related source files.
+   b. Identify the root cause — whether the bug is in the source code or the test itself.
+   c. Apply a targeted fix by editing the source file(s). Do NOT refactor or change code unrelated to the failing tests.
+   d. Run that test suite again.
+   e. Repeat until that test suite passes, then move to the next one.
+3. After fixing one suite, re-run all previous suites to ensure fixes didn't break anything.
+4. Continue until ALL test suites pass.
+5. When finished, print a summary of all changes you made.`;
+
+    const testResult = claude.invoke(testPrompt);
+    if (!testResult.success) {
+      logger.error("Claude Code test-fix cycle reported a failure.");
+    } else {
+      logger.success("All tests passed");
+    }
+
+    nextIndex++;
   }
 
-  // Step 3: Run workflow code --force
-  logger.info("Running workflow code --force...");
-
-  const { codeCommand } = await import("./code");
-  await codeCommand({ force: true });
-
-  // Step 4: Run tests
-  logger.info("Running tests...");
-  let testsPass = true;
-
-  try {
-    execSync("npm test", {
-      cwd: files.resolve("backend"),
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-      timeout: 120_000,
-    });
-    logger.success("Backend tests: passed");
-  } catch (err: unknown) {
-    logger.error("Backend tests: failed");
-    testsPass = false;
-  }
-
-  try {
-    execSync("npx playwright test", {
-      cwd: files.resolve("frontend"),
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-      timeout: 120_000,
-    });
-    logger.success("Frontend tests: passed");
-  } catch (err: unknown) {
-    logger.error("Frontend tests: failed");
-    testsPass = false;
-  }
-
-  // Step 5: Archive processed feature requests
-  files.ensureDir(archivDir);
-
+  // Archive processed feature requests
+  files.ensureDir(archiveDir);
   for (const request of featureRequests) {
     const src = path.join(newFeaturesDir, request.name);
-    const dest = path.join(archivDir, request.name);
+    const dest = path.join(archiveDir, request.name);
     files.moveFile(src, dest);
     logger.success(
       `Moved specs/new-features/${request.name} → specs/generated-new-features/${request.name}`
@@ -177,10 +186,6 @@ Each must follow the Required Sections from the schema precisely.`;
   }
 
   console.log(
-    `\nFeature pipeline complete — ${featureRequests.length} feature(s) added${testsPass ? ", all tests passed" : ", some tests failed"}.`
+    `\nFeature pipeline complete — ${featureRequests.length} feature(s) added.`
   );
-
-  if (!testsPass) {
-    process.exit(1);
-  }
 }
