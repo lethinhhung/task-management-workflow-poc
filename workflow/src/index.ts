@@ -5,6 +5,9 @@ import { initCommand } from "./commands/init";
 import { codeCommand } from "./commands/code";
 import { featureCommand } from "./commands/feature";
 import { debugCommand } from "./commands/debug";
+import { testCommand } from "./commands/test";
+import { testBackendCommand } from "./commands/test-backend";
+import { testFrontendCommand } from "./commands/test-frontend";
 
 const program = new Command();
 
@@ -41,6 +44,27 @@ program
   .description("Analyze errors, apply fixes, re-run tests")
   .action(async (error) => {
     await debugCommand(error);
+  });
+
+program
+  .command("test")
+  .description("Run all tests, fix failures (up to 3 attempts)")
+  .action(async () => {
+    await testCommand();
+  });
+
+program
+  .command("test-backend")
+  .description("Run backend tests, fix failures (up to 3 attempts)")
+  .action(async () => {
+    await testBackendCommand();
+  });
+
+program
+  .command("test-frontend")
+  .description("Run frontend tests, fix failures (up to 3 attempts)")
+  .action(async () => {
+    await testFrontendCommand();
   });
 
 program.parse(process.argv);
